@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # DIRS=$(ls | grep data)
-DIRS="data-crypto data-robotics"
+DIRS="data-robotics"
 for DIR in $DIRS
 do
     cd $DIR

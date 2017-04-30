@@ -29,11 +29,7 @@ def tags_to_topics(topic_word_probabilities):
 
     return (topic_tag_dict, tag_topic_dict)
 
-if __name__ == '__main__':
-    tags_list_file = sys.argv[1]
-    phi_file = sys.argv[2]
-    wordmap_file = sys.argv[3]
-
+def main(tags_list_file, phi_file, wordmap_file):
     tags_list = []
     with open(tags_list_file) as f:
         tags_list = [line[:-1] for line in f]
@@ -61,6 +57,14 @@ if __name__ == '__main__':
                 tag = idx_to_tags[tag_idx]
                 topic_word_probabilities[topic, tag] = prob
 
+    return tags_to_topics(topic_word_probabilities)
 
-    print(tags_to_topics(topic_word_probabilities))
+
+
+if __name__ == '__main__':
+    tags_list_file = sys.argv[1]
+    phi_file = sys.argv[2]
+    wordmap_file = sys.argv[3]
+
+    print(main(tags_list_file, phi_file, wordmap_file))
 

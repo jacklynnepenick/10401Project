@@ -1,63 +1,81 @@
 import sys
 
-def tags_to_topics(topic_word_probabilities):
-    #topic_word_probabilities[topic, word] = P(word | topic)
-    # topic_word_probabilities undefined for word not in tags
-    if len(topic_word_probabilities) == 0:
+def tags_to_topics(topic_tag_probabilities):
+    #topic_tag_probabilities[topic, tag] = avg(P(tag_word | topic) for tag_word in tag)
+    if len(topic_tag_probabilities) == 0:
         #base case
         return ({}, {})
 
     best_topic = None
     best_tag = None
     best_prob = -1.0
-    for (topic,tag) in topic_word_probabilities:
-        prob = topic_word_probabilities[topic,tag]
+    for (topic,tag) in topic_tag_probabilities:
+        prob = topic_tag_probabilities[topic,tag]
         if prob > best_prob:
             best_topic = topic
             best_tag = tag
             best_prob = prob
 
-    topic_word_probabilities_ = {
-            (topic, word) : topic_word_probabilities[topic,word]
-            for topic, word in topic_word_probabilities
-            if topic != best_topic and word != best_tag
+    topic_tag_probabilities_ = {
+            (topic, tag) : topic_tag_probabilities[topic,tag]
+            for topic, tag in topic_tag_probabilities
+            if topic != best_topic and tag != best_tag
         }
 
-    topic_tag_dict, tag_topic_dict = tags_to_topics(topic_word_probabilities_)
-    topic_tag_dict[best_topic] = best_tag
-    tag_topic_dict[best_tag] = best_topic
+    best_tag_s = "-".join(best_tag)
+
+    topic_tag_dict, tag_topic_dict = tags_to_topics(topic_tag_probabilities_)
+    topic_tag_dict[best_topic] = best_tag_s
+    tag_topic_dict[best_tag_s] = best_topic
 
     return (topic_tag_dict, tag_topic_dict)
 
-def main(tags_list_file, phi_file, wordmap_file):
+
+def get_topic_tag_probabilities(tags_list_file, phi_file, wordmap_file):
     tags_list = []
     with open(tags_list_file) as f:
-        tags_list = [line[:-1] for line in f]
-    tags_set = set(tags_list)
+        tags_list = [tuple(line[:-1].split('-')) for line in f]
 
-    tags_to_idx = {}
-    idx_to_tags = {}
+    #relevant_words = set.union(*(set(tag) for tag in tags_list))
+
+    words_to_idx = {}
+    idx_to_words = {}
     with open(wordmap_file) as f:
         for line in f:
-            tag = line[:-1].split()[0]
+            word = line[:-1].split()[0]
             idx = int(line[:-1].split()[-1])
-            if tag in tags_set:
-                tags_to_idx[tag] = idx
-                idx_to_tags[idx] = tag
-    #note: domain(tags_to_idx) != tags_set
+            #if word not in relevant_words: continue
+            words_to_idx[word] = idx
+            idx_to_words[idx] = word
 
     topic_word_probabilities = {}
+
+    topics = None
 
     with open(phi_file) as f:
         for topic, line in enumerate(f):
             probs = [float(sprob) for sprob in line.split()]
-            for tag_idx, prob in enumerate(probs):
-                if tag_idx not in idx_to_tags:
-                    continue
-                tag = idx_to_tags[tag_idx]
-                topic_word_probabilities[topic, tag] = prob
+            for word_idx, prob in enumerate(probs):
+                #if idx not in idx_to_words: continue
+                word = idx_to_words[word_idx]
+                topic_word_probabilities[topic, word] = prob
+        topics = range(topic+1)
 
-    return tags_to_topics(topic_word_probabilities)
+    topic_tag_probabilities = {
+        (topic, tag): sum(
+                (topic_word_probabilities[topic, word]
+                 if (topic, word) in topic_word_probabilities
+                 else 0.0)
+                for word in tag
+            ) / len(tag)
+        for tag in tags_list
+        for topic in topics
+    }
+
+    return topic_tag_probabilities, topics, tags_list
+
+def main(tags_list_file, phi_file, wordmap_file):
+    return tags_to_topics(get_topic_tag_probabilities(tags_list_file, phi_file, wordmap_file)[0])
 
 
 

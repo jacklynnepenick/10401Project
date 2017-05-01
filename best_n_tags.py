@@ -14,6 +14,7 @@ def main(n, tags_list_file, theta_file, phi_file, wordmap_file):
     with open(theta_file, "r") as f:
         for question, line in enumerate(f):
             for topic, sprob  in enumerate(line.split()):
+                if topic not in topic_tag_dict: continue
                 prob = float(sprob)
                 tag = topic_tag_dict[topic]
                 tag_questions_probs_dict[tag, question] = prob
